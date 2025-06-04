@@ -8,16 +8,23 @@ license = "MIT"
 authors = [{ name = "ithaquakr", email = "ithadev.nguyen@gmail.com" }]
 keywords = ["celery", "prometheus", "exporter", "monitoring", "metrics"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Topic :: System :: Monitoring",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: System :: Monitoring",
 ]
+dependencies = ["prometheus-client>=0.22.1"]
 
 [project.optional-dependencies]
-dev = ["ruff>=0.11.12"]
+dev = []
 
 [tool.ruff]
 target-version = "py39"
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "ruff>=0.11.12",
+]

@@ -1,0 +1,26 @@
+"""
+Configurations.
+"""
+
+import os
+
+# Defaults
+DEFAULT_EXPORTER_HOST = "0.0.0.0"
+DEFAULT_EXPORTER_PORT = 9726
+DEFAULT_POLLING_INTERVAL = 30
+
+DEFAULT_LOG_LEVEL = "INFO"
+DEFAULT_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+DEFAULT_LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
+
+# Configs
+## Exporter config
+EXPORTER_HOST = os.environ.get("CQ_EXPORTER_HOST", DEFAULT_EXPORTER_HOST)
+EXPORTER_PORT = os.environ.get("CQ_EXPORTER_PORT", DEFAULT_EXPORTER_PORT)
+EXPORTER_POLLING_INTERVAL = os.environ.get(
+    "CQ_EXPORTER_POLLING_INTERVAL", DEFAULT_POLLING_INTERVAL
+)
+## Logging config
+LOG_LEVEL = os.environ.get("CQ_EXPORTER_LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
+LOG_FORMAT = os.environ.get("CQ_EXPORTER_LOG_FORMAT", DEFAULT_LOG_FORMAT)
+LOG_DATEFMT = os.environ.get("CQ_EXPORTER_LOG_DATEFMT", DEFAULT_LOG_DATEFMT)
