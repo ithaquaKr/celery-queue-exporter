@@ -47,4 +47,4 @@ def test_logging_config_structure():
     assert "celery_queue_exporter" in LOGGING_CONFIG["loggers"]
     logger_config = LOGGING_CONFIG["loggers"]["celery_queue_exporter"]
     assert "handlers" in logger_config
-    assert "level" in logger_config 
+    assert "level" in logger_config
