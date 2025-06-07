@@ -25,15 +25,25 @@ PROJECT_NAME := celery-queue-exporter
 VENV_PATH := .venv
 DOCKER_COMPOSE := docker compose -f docker/docker-compose.yml
 
-.PHONY: help setup clean test test-unit test-e2e lint format type-check build docker-build docs docs-serve dev-env dev-env-down update-deps
+# Docker multi-platform settings
+DOCKER_REGISTRY ?=
+DOCKER_TAG ?= latest
+DOCKER_PLATFORMS := linux/amd64,linux/arm64
+DOCKER_BUILDER := $(PROJECT_NAME)-builder
+DOCKERFILE_PATH := docker/Dockerfile
+
+# Detect current platform for local builds
+CURRENT_PLATFORM := $(shell docker version --format '{{.Server.Os}}/{{.Server.Arch}}')
 
 # Default target
 .DEFAULT_GOAL := help
 
-help: ## Show this help message
-	@echo "$(BLUE)Available targets:$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
+##@ Other
+.PHONY: help
+help: ## Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\n$(YELLOW)Usage:$(NC)\n  make $(BLUE)<target>$(NC)\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  $(BLUE)%-15s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
+##@ Development
 setup: ## Set up development environment
 	@echo "$(BLUE)Setting up development environment...$(NC)"
 	$(PYTHON) -m venv $(VENV_PATH)
@@ -41,20 +51,16 @@ setup: ## Set up development environment
 	$(VENV_BIN)/pre-commit install
 	@echo "$(GREEN)Development environment setup complete!$(NC)"
 
-clean: ## Clean up build artifacts and temporary files
+clean: ## Clean up build artifacts, docker buildx resources and temporary files
 	@echo "$(BLUE)Cleaning up...$(NC)"
-	$(RM) build dist *.egg-info .pytest_cache .coverage .mypy_cache .ruff_cache
+	@echo "$(BLUE)Cleaning up python temporary files ..."
+	$(RM) .pytest_cache .coverage .mypy_cache .ruff_cache
+	@echo "$(BLUE)Cleaning up Docker buildx resources...$(NC)"
+	@if docker buildx ls | grep -q $(DOCKER_BUILDER); then \
+		docker buildx rm $(DOCKER_BUILDER); \
+		echo "$(GREEN)Buildx builder $(DOCKER_BUILDER) removed$(NC)"; \
+	fi
 	@echo "$(GREEN)Cleanup complete!$(NC)"
-
-test: test-unit test-e2e ## Run all tests
-
-test-unit: ## Run unit tests
-	@echo "$(BLUE)Running unit tests...$(NC)"
-	$(VENV_BIN)/pytest tests/unit -v
-
-test-e2e: ## Run end-to-end tests
-	@echo "$(BLUE)Running end-to-end tests...$(NC)"
-	$(VENV_BIN)/pytest tests/e2e -v
 
 lint: ## Run code linting
 	@echo "$(BLUE)Running linters...$(NC)"
@@ -66,63 +72,48 @@ format: ## Format code
 	$(VENV_BIN)/ruff format .
 	@echo "$(GREEN)Formatting complete!$(NC)"
 
-type-check: ## Run type checking
-	@echo "$(BLUE)Running type checking...$(NC)"
-	$(VENV_BIN)/mypy exporter
-	@echo "$(GREEN)Type checking complete!$(NC)"
-
-build: clean ## Build Python package
-	@echo "$(BLUE)Building package...$(NC)"
-	$(VENV_BIN)/uv pip build
-	@echo "$(GREEN)Build complete!$(NC)"
-
-docker-build: ## Build Docker image
-	@echo "$(BLUE)Building Docker image...$(NC)"
-	docker build -t $(PROJECT_NAME) -f docker/Dockerfile .
+##@ Build
+docker-build: ## Build Docker image for current platform only (fast)
+	@echo "$(BLUE)Building Docker image for current platform ($(CURRENT_PLATFORM))...$(NC)"
+	docker build -t $(DOCKER_REGISTRY)/$(PROJECT_NAME):$(DOCKER_TAG) -f $(DOCKERFILE_PATH) .
 	@echo "$(GREEN)Docker build complete!$(NC)"
 
-docs: ## Build documentation
-	@echo "$(BLUE)Building documentation...$(NC)"
-	cd docs && $(VENV_BIN)/mkdocs build
-	@echo "$(GREEN)Documentation build complete!$(NC)"
+docker-multi: ## Build multi-platform Docker images
+	@echo "$(BLUE)Setting up Docker buildx for multi-platform builds...$(NC)"
+	@if ! docker buildx ls | grep -q $(DOCKER_BUILDER); then \
+		echo "$(YELLOW)Creating new buildx builder: $(DOCKER_BUILDER)$(NC)"; \
+		docker buildx create --name $(DOCKER_BUILDER) --platform $(DOCKER_PLATFORMS) --use; \
+	else \
+		echo "$(YELLOW)Using existing buildx builder: $(DOCKER_BUILDER)$(NC)"; \
+		docker buildx use $(DOCKER_BUILDER); \
+	fi
+	@docker buildx inspect --bootstrap
+	@echo "$(GREEN)Docker buildx setup complete!$(NC)"
+	@echo "$(BLUE)Building multi-platform Docker images...$(NC)"
+	@echo "$(YELLOW)Platforms: $(DOCKER_PLATFORMS)$(NC)"
+	docker buildx build \
+		--platform $(DOCKER_PLATFORMS) \
+		--tag $(DOCKER_REGISTRY)/$(PROJECT_NAME):$(DOCKER_TAG) \
+		--file $(DOCKERFILE_PATH) \
+		--load \
+		.
+	@echo "$(GREEN)Multi-platform Docker build complete!$(NC)"
 
-docs-serve: ## Serve documentation locally
-	@echo "$(BLUE)Starting documentation server...$(NC)"
-	cd docs && $(VENV_BIN)/mkdocs serve
+docker-push: ## Push images to registry
+	@if [ -z "$(DOCKER_REGISTRY)" ]; then \
+		echo "$(RED)Error: DOCKER_REGISTRY is not set. Use: make docker-push DOCKER_REGISTRY=your-registry/$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Pushing images to registry $(DOCKER_REGISTRY)...$(NC)"
+	docker push $(DOCKER_REGISTRY)/$(PROJECT_NAME):$(DOCKER_TAG)
+	@echo "$(GREEN)Docker push complete!$(NC)"
 
-dev-env: ## Start development environment with Docker Compose
-	@echo "$(BLUE)Starting development environment...$(NC)"
-	./scripts/dev-setup.sh
-	@echo "$(GREEN)Development environment is ready!$(NC)"
-	@echo "$(YELLOW)Services:$(NC)"
-	@echo "  - Celery Queue Exporter: http://localhost:9808/metrics"
-	@echo "  - RabbitMQ Management: http://localhost:15672 (guest/guest)"
-	@echo "  - Prometheus: http://localhost:9090"
-	@echo "  - Grafana: http://localhost:3000 (admin/admin)"
-
-dev-env-down: ## Stop development environment
-	@echo "$(BLUE)Stopping development environment...$(NC)"
-	$(DOCKER_COMPOSE) down
-	@echo "$(GREEN)Development environment stopped!$(NC)"
-
-update-deps: ## Update dependencies
-	@echo "$(BLUE)Updating dependencies...$(NC)"
-	$(VENV_BIN)/uv pip compile --upgrade pyproject.toml -o uv.lock
-	$(VENV_BIN)/uv pip sync uv.lock
-	@echo "$(GREEN)Dependencies updated!$(NC)"
-
-# Release targets
-release-patch: ## Create a patch release
-	@echo "$(BLUE)Creating patch release...$(NC)"
-	$(VENV_BIN)/bump2version patch
-	@echo "$(GREEN)Patch release created!$(NC)"
-
-release-minor: ## Create a minor release
-	@echo "$(BLUE)Creating minor release...$(NC)"
-	$(VENV_BIN)/bump2version minor
-	@echo "$(GREEN)Minor release created!$(NC)"
-
-release-major: ## Create a major release
-	@echo "$(BLUE)Creating major release...$(NC)"
-	$(VENV_BIN)/bump2version major
-	@echo "$(GREEN)Major release created!$(NC)"
+docker-info: ## Show Docker build configuration
+	@echo "$(BLUE)Docker Build Configuration:$(NC)"
+	@echo "  Project Name: $(GREEN)$(PROJECT_NAME)$(NC)"
+	@echo "  Docker Tag: $(GREEN)$(DOCKER_TAG)$(NC)"
+	@echo "  Registry: $(GREEN)$(DOCKER_REGISTRY)$(NC)"
+	@echo "  Platforms: $(GREEN)$(DOCKER_PLATFORMS)$(NC)"
+	@echo "  Builder: $(GREEN)$(DOCKER_BUILDER)$(NC)"
+	@echo "  Current Platform: $(GREEN)$(CURRENT_PLATFORM)$(NC)"
+	@echo "  Dockerfile: $(GREEN)$(DOCKERFILE_PATH)$(NC)"
