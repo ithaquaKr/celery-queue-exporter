@@ -27,23 +27,23 @@ uv pip install celery-queue-exporter
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://github.com/ithalab/celery-queue-exporter.git
-   cd celery-queue-exporter
-   ```
+    ```bash
+    git clone https://github.com/ithalab/celery-queue-exporter.git
+    cd celery-queue-exporter
+    ```
 
 2. Create and activate a virtual environment:
 
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+    ```
 
 3. Install development dependencies:
 
-   ```bash
-   uv pip install -e ".[dev]"
-   ```
+    ```bash
+    uv pip install -e ".[dev]"
+    ```
 
 ## Contributing
 

@@ -1,0 +1,32 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  worker_celery:
+    build: .
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    command: celery -A app.celery worker -n worker_celery --loglevel=info -Q celery
+
+  worker_mail:
+    build: .
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    command: celery -A app.celery worker -n worker_mail --loglevel=info -Q mail
