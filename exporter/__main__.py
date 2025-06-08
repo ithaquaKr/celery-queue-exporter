@@ -6,6 +6,7 @@ import logging
 
 from prometheus_client.core import REGISTRY
 
+from exporter.collector import CQCollector
 from exporter.configs import (
     EXPORTER_HOST,
     EXPORTER_POLLING_INTERVAL,
@@ -32,6 +33,8 @@ def setup_logging() -> None:
 def main():
     setup_logging()
     logger.info("Exporter is starting ...")
+
+    REGISTRY.register(CQCollector("redis", {}))
     Exporter(
         REGISTRY,
         int(EXPORTER_POLLING_INTERVAL),
