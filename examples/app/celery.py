@@ -26,4 +26,6 @@ celery_app.conf.update(
     task_time_limit=300,  # 5 minutes max per task
     worker_prefetch_multiplier=1,
     worker_max_tasks_per_child=1000,
+    worker_send_task_events=True,
+    task_send_sent_event=True,
 )
