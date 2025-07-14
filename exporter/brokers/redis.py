@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 import redis
 from redis.exceptions import RedisError
 
-from exporter.brokers import Broker
+from exporter.brokers.base import Broker
 
 logger = logging.getLogger(__name__)
 
