@@ -33,7 +33,7 @@ jobs:
         run: uv sync --locked --all-extras --dev
 
       - name: Run Ruff
-        run: ruff check --fix --unsafe-fixes --exit-non-zero-on-fix --output-format=github ./exporter
+        run: uv run ruff check --fix --unsafe-fixes --exit-non-zero-on-fix --output-format=github ./exporter
 
       - name: Run tests
         run: uv run pytest tests
