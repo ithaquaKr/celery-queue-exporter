@@ -1,5 +1,6 @@
 # Celery Queue Exporter
 
+[![CI](https://github.com/ithaquaKr/celery-queue-exporter/actions/workflows/ci.yml/badge.svg)](https://github.com/ithaquaKr/celery-queue-exporter/actions/workflows/ci.yml)
 A Prometheus exporter for monitoring Celery queue.
 
 ## Features
