@@ -8,5 +8,5 @@ class Task(BaseModel):
 
 class Queue(BaseModel):
     name: str
-    db: str
+    db: int
     length: int

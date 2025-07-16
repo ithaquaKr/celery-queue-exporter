@@ -44,21 +44,3 @@ class Broker(ABC):
             Number of messages in the queue
         """
         pass
-
-    @abstractmethod
-    def get_queue_tasks(self, queue_name: str) -> Dict[str, Any]:
-        """Get detailed metrics for a queue.
-
-        Args:
-            queue_name: Name of the queue to inspect
-        """
-        pass
-
-    @abstractmethod
-    def list_queues(self) -> list[str]:
-        """Get list of all queue names.
-
-        Returns:
-            List of queue names
-        """
-        pass

@@ -5,13 +5,10 @@ from typing import Dict, Type
 from exporter.brokers.base import Broker
 from exporter.brokers.redis import RedisBroker
 
-# from exporter.brokers.rabbitmq import RabbitMQBroker
-
 
 __all__ = [
     "Broker",
     "RedisBroker",
-    # "RabbitMQBroker",
     "BrokerFactory",
 ]
 
@@ -22,7 +19,6 @@ class BrokerFactory:
     # Registry of supported broker types
     _broker_types: Dict[str, Type[Broker]] = {
         "redis": RedisBroker,
-        # "rabbitmq": RabbitMQBroker,
     }
 
     @classmethod

@@ -1,7 +1,12 @@
 """Test configuration and fixtures for celery-queue-exporter."""
 
+import os
+import sys
 import pytest
 from celery import Celery
+
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
 @pytest.fixture
