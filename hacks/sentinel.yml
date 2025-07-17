@@ -1,0 +1,91 @@
+version: "3.8"
+
+services:
+  redis-master:
+    image: redis:7.0-alpine
+    container_name: redis-master
+    command: redis-server --port 6379
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - redis-net
+
+  redis-replica-1:
+    image: redis:7.0-alpine
+    container_name: redis-replica-1
+    command: redis-server --port 6380 --slaveof redis-master 6379
+    ports:
+      - "6380:6380"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    depends_on:
+      - redis-master
+    networks:
+      - redis-net
+
+  redis-replica-2:
+    image: redis:7.0-alpine
+    container_name: redis-replica-2
+    command: redis-server --port 6381 --slaveof redis-master 6379
+    ports:
+      - "6381:6381"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    depends_on:
+      - redis-master
+    networks:
+      - redis-net
+
+  redis-sentinel-1:
+    image: redis:7.0-alpine
+    container_name: redis-sentinel-1
+    command: >
+      redis-sentinel /usr/local/etc/redis/sentinel.conf
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./sentinel1.conf:/usr/local/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica-1
+      - redis-replica-2
+    networks:
+      - redis-net
+
+  redis-sentinel-2:
+    image: redis:7.0-alpine
+    container_name: redis-sentinel-2
+    command: >
+      redis-sentinel /usr/local/etc/redis/sentinel.conf
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./sentinel2.conf:/usr/local/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica-1
+      - redis-replica-2
+    networks:
+      - redis-net
+
+  redis-sentinel-3:
+    image: redis:7.0-alpine
+    container_name: redis-sentinel-3
+    command: >
+      redis-sentinel /usr/local/etc/redis/sentinel.conf
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./sentinel3.conf:/usr/local/etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica-1
+      - redis-replica-2
+    networks:
+      - redis-net
+
+networks:
+  redis-net:
+    driver: bridge
