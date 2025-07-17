@@ -2,7 +2,7 @@
 Configurations.
 """
 
-from typing import Union
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,10 @@ class DefaultConfig:
     BROKER_PORT = 6379
     BROKER_PASSWORD = None
     BROKER_SOCKET_TIMEOUT = 5.0
+    BROKER_USE_SENTINEL = False
+    BROKER_SENTINEL_HOSTS = None
+    BROKER_SENTINEL_MASTER_NAME = None
+    BROKER_SENTINEL_PASSWORD = None
 
 
 class Settings(BaseSettings):
@@ -40,5 +44,9 @@ class Settings(BaseSettings):
     broker_type: str
     broker_host: str
     broker_port: int
-    broker_password: Union[str, None]
+    broker_password: Optional[str] = None
     broker_socket_timeout: float
+    broker_use_sentinel: bool
+    broker_sentinel_hosts: Optional[str] = None
+    broker_sentinel_master_name: Optional[str] = None
+    broker_sentinel_password: Optional[str] = None

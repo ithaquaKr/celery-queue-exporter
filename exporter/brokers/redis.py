@@ -1,8 +1,9 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 import redis
 from redis.exceptions import RedisError
+from redis.sentinel import Sentinel
 
 from exporter.brokers.base import Broker
 
@@ -19,6 +20,10 @@ class RedisBroker(Broker):
         db: int = 0,
         password: Optional[str] = None,
         socket_timeout: float = 5.0,
+        use_sentinel: bool = False,
+        sentinel_hosts: Optional[str] = None,
+        sentinel_master_name: Optional[str] = None,
+        sentinel_password: Optional[str] = None,
         **kwargs,
     ) -> None:
         """Initialize Redis broker connection.
@@ -29,6 +34,10 @@ class RedisBroker(Broker):
             db: Redis database number
             password: Optional Redis password
             socket_timeout: Socket timeout in seconds
+            use_sentinel: Use Redis Sentinel for connection
+            sentinel_hosts: Comma-separated list of Sentinel hosts
+            sentinel_master_name: Name of the master to monitor
+            sentinel_password: Optional Sentinel password
             **kwargs: Additional redis-py connection arguments
         """
         self._host = host
@@ -36,25 +45,55 @@ class RedisBroker(Broker):
         self._db = db
         self._password = password
         self._socket_timeout = socket_timeout
+        self._use_sentinel = use_sentinel
+        self._sentinel_hosts = sentinel_hosts
+        self._sentinel_master_name = sentinel_master_name
+        self._sentinel_password = sentinel_password
         self._kwargs = kwargs
         self._client: Optional[redis.Redis] = None
 
+    def _get_sentinel_connection(self) -> redis.Redis:
+        """Get a connection to the master from a Sentinel."""
+        if not self._sentinel_hosts:
+            raise ValueError("Sentinel hosts must be provided")
+        if not self._sentinel_master_name:
+            raise ValueError("Sentinel master name must be provided")
+
+        sentinel_hosts: List[Any] = [
+            tuple(host.split(":")) for host in self._sentinel_hosts.split(",")
+        ]
+        sentinel = Sentinel(
+            sentinels=sentinel_hosts,
+            password=self._sentinel_password,
+            socket_timeout=self._socket_timeout,
+            **self._kwargs,
+        )
+        return sentinel.master_for(
+            self._sentinel_master_name,
+            db=self._db,
+            password=self._password,
+            socket_timeout=self._socket_timeout,
+            **self._kwargs,
+        )
+
     def connect(self) -> None:
         """Establish connection to Redis."""
-        # TODO: Do i need ConnectionPool ??
         try:
-            self._client = redis.Redis(
-                host=self._host,
-                port=self._port,
-                db=self._db,
-                password=self._password,
-                socket_timeout=self._socket_timeout,
-                **self._kwargs,
-            )
+            if self._use_sentinel:
+                self._client = self._get_sentinel_connection()
+            else:
+                self._client = redis.Redis(
+                    host=self._host,
+                    port=self._port,
+                    db=self._db,
+                    password=self._password,
+                    socket_timeout=self._socket_timeout,
+                    **self._kwargs,
+                )
             # Test connection
             self._client.ping()
-            logger.info(f"Connected to Redis at {self._host}:{self._port}/db{self._db}")
-        except RedisError as e:
+            logger.info(f"Connected to Redis at {self.connection_info}")
+        except (RedisError, ValueError) as e:
             logger.error(f"Failed to connect to Redis: {e}")
             self._client = None
             raise
@@ -123,7 +162,13 @@ class RedisBroker(Broker):
         Returns:
             Dictionary with connection details
         """
-        # TODO: support redis sentinel ??
+        if self._use_sentinel:
+            return {
+                "sentinel_hosts": self._sentinel_hosts,
+                "sentinel_master_name": self._sentinel_master_name,
+                "vdb": self._db,
+                "type": "redis-sentinel",
+            }
         return {
             "host": self._host,
             "port": self._port,

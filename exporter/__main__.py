@@ -72,6 +72,29 @@ def get_settings() -> Settings:
         default=DefaultConfig.BROKER_SOCKET_TIMEOUT,
         help="Broker socket timeout in seconds",
     )
+    parser.add_argument(
+        "--broker-use-sentinel",
+        action="store_true",
+        help="Use Redis Sentinel for broker",
+    )
+    parser.add_argument(
+        "--broker-sentinel-hosts",
+        type=str,
+        default=DefaultConfig.BROKER_SENTINEL_HOSTS,
+        help="Redis Sentinel hosts, e.g. 'host1:port1,host2:port2'",
+    )
+    parser.add_argument(
+        "--broker-sentinel-master-name",
+        type=str,
+        default=DefaultConfig.BROKER_SENTINEL_MASTER_NAME,
+        help="Redis Sentinel master name",
+    )
+    parser.add_argument(
+        "--broker-sentinel-password",
+        type=str,
+        default=DefaultConfig.BROKER_SENTINEL_PASSWORD,
+        help="Redis Sentinel password",
+    )
     args = parser.parse_args()
 
     return Settings(
@@ -98,6 +121,10 @@ def run_exporter(settings: Settings) -> None:
         "port": settings.broker_port,
         "password": settings.broker_password,
         "socket_timeout": settings.broker_socket_timeout,
+        "use_sentinel": settings.broker_use_sentinel,
+        "sentinel_hosts": settings.broker_sentinel_hosts,
+        "sentinel_master_name": settings.broker_sentinel_master_name,
+        "sentinel_password": settings.broker_sentinel_password,
     }
 
     REGISTRY.register(
