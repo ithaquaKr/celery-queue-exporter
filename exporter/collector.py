@@ -40,7 +40,7 @@ class CQCollector(Collector):
                 self._brokers[db] = broker
             except Exception as e:
                 logger.error(
-                    f"Failed to initialize broker for db {db}: {e}", exc_info=True
+                    "Failed to initialize broker for db %s: %s", db, e, exc_info=True
                 )
                 raise
 
@@ -77,11 +77,14 @@ class CQCollector(Collector):
 
                     except Exception as e:
                         logger.error(
-                            f"Error collecting metrics for queue {queue} in db {db}: {e}"
+                            "Error collecting metrics for queue %s in db %s: %s",
+                            queue,
+                            db,
+                            e,
                         )
                         continue
 
             yield celery_queue_length_metric
 
         except Exception as e:
-            logger.error(f"Error collecting queue metrics: {e}")
+            logger.error("Error collecting queue metrics: %s", e)

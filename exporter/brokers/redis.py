@@ -92,9 +92,9 @@ class RedisBroker(Broker):
                 )
             # Test connection
             self._client.ping()
-            logger.info(f"Connected to Redis at {self.connection_info}")
+            logger.info("Connected to Redis at %s", self.connection_info)
         except (RedisError, ValueError) as e:
-            logger.error(f"Failed to connect to Redis: {e}")
+            logger.error("Failed to connect to Redis: %s", e)
             self._client = None
             raise
 
@@ -105,7 +105,7 @@ class RedisBroker(Broker):
                 self._client.close()
                 logger.info("Disconnected from Redis")
             except RedisError as e:
-                logger.error(f"Error disconnecting from Redis: {e}")
+                logger.error("Error disconnecting from Redis: %s", e)
             finally:
                 self._client = None
 
@@ -138,7 +138,7 @@ class RedisBroker(Broker):
             # In Redis, Celery queues are stored as lists
             return self._client.llen(queue_name)
         except RedisError as e:
-            logger.error(f"Failed to get queue length for {queue_name}: {e}")
+            logger.error("Failed to get queue length for %s: %s", queue_name, e)
             raise
 
     def ping(self) -> bool:

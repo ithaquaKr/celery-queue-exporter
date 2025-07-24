@@ -11,6 +11,16 @@ logger = logging.getLogger(__package__)
 
 class MetricsHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
+        """
+        Handle HTTP GET requests.
+
+        If the request path is "/metrics", retrieves metrics from the associated metrics server,
+        acquires a lock to ensure thread safety, and returns the metrics with a 200 OK response
+        and appropriate content type. For any other path, responds with a 404 Not Found.
+
+        Returns:
+            None
+        """
         if self.path == "/metrics":
             # Get metrics from server instance
             metrics_server = self.server.metrics_server  # type: Exporter
@@ -36,7 +46,18 @@ class MetricsHandler(BaseHTTPRequestHandler):
 class Exporter:
     def __init__(self, registry, polling_interval: int) -> None:
         """
-        Initialize the Exporter.
+        Args:
+            registry: The metrics registry to use for collecting and exporting metrics.
+            polling_interval (int): The interval, in seconds, at which metrics are collected.
+
+        Attributes:
+            registry: Stores the provided metrics registry.
+            polling_interval (int): The interval for polling metrics.
+            metrics (bytes): Cached metrics data in bytes.
+            lock (threading.Lock): Lock to synchronize access to metrics.
+            _http_server: Reference to the HTTP server instance (initialized as None).
+            _collection_thread: Reference to the background collection thread (initialized as None).
+            _timestamp (float): Timestamp of the last metrics collection.
         """
         self.registry = registry
         self.polling_interval = polling_interval
@@ -60,7 +81,7 @@ class Exporter:
                         self.metrics = generate_latest(self.registry)
                 except Exception as e:
                     logger.error(
-                        f"There was an error collecting metrics: {e}", exc_info=True
+                        "There was an error collecting metrics: %s", e, exc_info=True
                     )
                 time.sleep(self.polling_interval)
 
@@ -92,16 +113,16 @@ class Exporter:
             # Add reference to this instance so handler can access metrics
             self._http_server.metrics_server = self  # type: ignore
 
-            logger.info(f"Starting metrics server on http://{host}:{port}/metrics")
+            logger.info("Starting metrics server on http://%s:%s/metrics", host, port)
             self._http_server.serve_forever()
 
         except socket.error as e:
-            logger.error(f"Failed to start metrics server: {e}", exc_info=True)
+            logger.error("Failed to start metrics server: %s", e, exc_info=True)
             raise
         except KeyboardInterrupt:
             logger.info("Received keyboard interrupt...")
         except Exception as e:
-            logger.error(f"Unexpected error serving metrics: {e}", exc_info=True)
+            logger.error("Unexpected error serving metrics: %s", e, exc_info=True)
             raise
         finally:
             self.shutdown()
@@ -115,7 +136,7 @@ class Exporter:
             try:
                 self._http_server.shutdown()
             except Exception as e:
-                logger.error(f"Error shutting down HTTP server: {e}", exc_info=True)
+                logger.error("Error shutting down HTTP server: %s", e, exc_info=True)
             finally:
                 self._http_server = None
 

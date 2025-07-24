@@ -5,7 +5,6 @@ from prometheus_client.core import REGISTRY
 
 from exporter.collector import CQCollector
 from exporter.configs import (
-    DefaultConfig,
     Settings,
 )
 from exporter.exporter import Exporter
@@ -18,87 +17,67 @@ def get_settings() -> Settings:
         description="Celery Queue Exporter",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
-        "--host", type=str, default=DefaultConfig.HOST, help="Host to serve metrics on"
-    )
-    parser.add_argument(
-        "--port", type=int, default=DefaultConfig.PORT, help="Port to serve metrics on"
-    )
+    parser.add_argument("--host", type=str, help="Host to serve metrics on")
+    parser.add_argument("--port", type=int, help="Port to serve metrics on")
     parser.add_argument(
         "--polling-interval",
         type=int,
-        default=DefaultConfig.POLLING_INTERVAL,
         help="Polling interval for collecting metrics",
     )
     parser.add_argument(
         "--monitor-queues",
         type=str,
-        default=DefaultConfig.MONITOR_QUEUES,
         help="Queues to monitor, e.g. '0:celery;1:tasks'",
     )
-    parser.add_argument(
-        "--log-level", type=str, default=DefaultConfig.LOG_LEVEL, help="Log level"
-    )
-    parser.add_argument(
-        "--log-format", type=str, default=DefaultConfig.LOG_FORMAT, help="Log format"
-    )
+    parser.add_argument("--log-level", type=str, help="Log level")
+    parser.add_argument("--log-format", type=str, help="Log format")
     parser.add_argument(
         "--log-datefmt",
         type=str,
-        default=DefaultConfig.LOG_DATEFMT,
         help="Log date format",
     )
     parser.add_argument(
         "--broker-type",
         type=str,
-        default=DefaultConfig.BROKER_TYPE,
         help="Broker type (redis or rabbitmq)",
     )
-    parser.add_argument(
-        "--broker-host", type=str, default=DefaultConfig.BROKER_HOST, help="Broker host"
-    )
-    parser.add_argument(
-        "--broker-port", type=int, default=DefaultConfig.BROKER_PORT, help="Broker port"
-    )
+    parser.add_argument("--broker-host", type=str, help="Broker host")
+    parser.add_argument("--broker-port", type=int, help="Broker port")
     parser.add_argument(
         "--broker-password",
         type=str,
-        default=DefaultConfig.BROKER_PASSWORD,
         help="Broker password",
     )
     parser.add_argument(
         "--broker-socket-timeout",
         type=float,
-        default=DefaultConfig.BROKER_SOCKET_TIMEOUT,
         help="Broker socket timeout in seconds",
     )
     parser.add_argument(
         "--broker-use-sentinel",
-        action="store_true",
+        action="store_const",
+        const=True,
         help="Use Redis Sentinel for broker",
     )
     parser.add_argument(
         "--broker-sentinel-hosts",
         type=str,
-        default=DefaultConfig.BROKER_SENTINEL_HOSTS,
         help="Redis Sentinel hosts, e.g. 'host1:port1,host2:port2'",
     )
     parser.add_argument(
         "--broker-sentinel-master-name",
         type=str,
-        default=DefaultConfig.BROKER_SENTINEL_MASTER_NAME,
         help="Redis Sentinel master name",
     )
     parser.add_argument(
         "--broker-sentinel-password",
         type=str,
-        default=DefaultConfig.BROKER_SENTINEL_PASSWORD,
         help="Redis Sentinel password",
     )
     args = parser.parse_args()
 
     return Settings(
-        **{k: v for k, v in vars(args).items()},
+        **{k: v for k, v in vars(args).items() if v is not None},
     )
 
 

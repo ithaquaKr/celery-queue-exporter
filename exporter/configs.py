@@ -1,29 +1,10 @@
 """
-Configurations.
+Settings for the Celery Queue Exporter.
 """
 
 from typing import Optional
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-# Default values
-class DefaultConfig:
-    HOST = "0.0.0.0"
-    PORT = 9726
-    POLLING_INTERVAL = 30
-    MONITOR_QUEUES = "0:celery"
-    LOG_LEVEL = "INFO"
-    LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
-    BROKER_TYPE = "redis"
-    BROKER_HOST = "localhost"
-    BROKER_PORT = 6379
-    BROKER_PASSWORD = None
-    BROKER_SOCKET_TIMEOUT = 5.0
-    BROKER_USE_SENTINEL = False
-    BROKER_SENTINEL_HOSTS = None
-    BROKER_SENTINEL_MASTER_NAME = None
-    BROKER_SENTINEL_PASSWORD = None
 
 
 class Settings(BaseSettings):
@@ -34,19 +15,19 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    host: str
-    port: int
-    polling_interval: int
-    monitor_queues: str
-    log_level: str
-    log_format: str
-    log_datefmt: str
-    broker_type: str
-    broker_host: str
-    broker_port: int
+    host: str = "0.0.0.0"
+    port: int = 9726
+    polling_interval: int = 30
+    monitor_queues: str = "0:celery"
+    log_level: str = "INFO"
+    log_format: str = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    log_datefmt: str = "%Y-%m-%d %H:%M:%S"
+    broker_type: str = "redis"
+    broker_host: str = "localhost"
+    broker_port: int = 6379
     broker_password: Optional[str] = None
-    broker_socket_timeout: float
-    broker_use_sentinel: bool
+    broker_socket_timeout: float = 5.0
+    broker_use_sentinel: bool = False
     broker_sentinel_hosts: Optional[str] = None
     broker_sentinel_master_name: Optional[str] = None
     broker_sentinel_password: Optional[str] = None
