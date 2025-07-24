@@ -7,6 +7,12 @@ from typing import Any, Dict
 class Broker(ABC):
     """Abstract interface for Celery broker implementations."""
 
+    @property
+    @abstractmethod
+    def connection_info(self) -> Dict[str, Any]:
+        """Get connection information."""
+        pass
+
     @abstractmethod
     def connect(self) -> None:
         """Establish connection to the broker."""
@@ -27,12 +33,6 @@ class Broker(ABC):
         """Check if broker is reachable."""
         pass
 
-    @property
-    @abstractmethod
-    def connection_info(self) -> Dict[str, Any]:
-        """Get connection information."""
-        pass
-
     @abstractmethod
     def get_queue_length(self, queue_name: str) -> int:
         """Get the number of messages in a queue.
@@ -42,5 +42,18 @@ class Broker(ABC):
 
         Returns:
             Number of messages in the queue
+        """
+        pass
+
+    @abstractmethod
+    def get_queue_information(self, queue_length: int, queue_name: str) -> dict:
+        """[TODO:description]
+
+        Args:
+            queue_length: [TODO:description]
+            queue_name: [TODO:description]
+
+        Returns:
+            [TODO:return]
         """
         pass

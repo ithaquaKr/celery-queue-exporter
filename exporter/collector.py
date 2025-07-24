@@ -57,6 +57,12 @@ class CQCollector(Collector):
             labels=["broker_type", "queue", "vdb"],
         )
 
+        celery_queue_task_in_queue = GaugeMetricFamily(
+            "celery_task_in_queue",
+            "Task in queue informations",
+            labels=["broker_type", "queue", "vdb", "task_name"],
+        )
+
         try:
             # Collect metrics for each db
             for db, queues in self._monitor_queues.items():
@@ -74,6 +80,15 @@ class CQCollector(Collector):
                             labels=[self._broker_type, queue, str(db)],
                             value=length,
                         )
+                        # TODO: Handle when the configure incorrect, queue_name does not exist,
+                        # the queue_length will be Zero. But we can't get task in a not existed queue.
+                        for task, count in broker.get_queue_information(
+                            length, queue
+                        ).items():
+                            celery_queue_task_in_queue.add_metric(
+                                labels=[self._broker_type, queue, str(db), task],
+                                value=count,
+                            )
 
                     except Exception as e:
                         logger.error(
@@ -85,6 +100,7 @@ class CQCollector(Collector):
                         continue
 
             yield celery_queue_length_metric
+            yield celery_queue_task_in_queue
 
         except Exception as e:
             logger.error("Error collecting queue metrics: %s", e)

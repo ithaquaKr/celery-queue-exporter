@@ -1,5 +1,7 @@
+import json
 import logging
-from typing import Any, Dict, Optional, List
+from collections import defaultdict
+from typing import Any, Dict, List, Optional
 
 import redis
 from redis.exceptions import RedisError
@@ -76,6 +78,27 @@ class RedisBroker(Broker):
             **self._kwargs,
         )
 
+    @property
+    def connection_info(self) -> Dict[str, Any]:
+        """Get Redis connection information.
+
+        Returns:
+            Dictionary with connection details
+        """
+        if self._use_sentinel:
+            return {
+                "sentinel_hosts": self._sentinel_hosts,
+                "sentinel_master_name": self._sentinel_master_name,
+                "vdb": self._db,
+                "type": "redis-sentinel",
+            }
+        return {
+            "host": self._host,
+            "port": self._port,
+            "vdb": self._db,
+            "type": "redis",
+        }
+
     def connect(self) -> None:
         """Establish connection to Redis."""
         try:
@@ -119,6 +142,20 @@ class RedisBroker(Broker):
         except RedisError:
             return False
 
+    def ping(self) -> bool:
+        """Check if Redis is reachable.
+
+        Returns:
+            True if Redis responds to ping, False otherwise
+        """
+        if not self._client:
+            return False
+        try:
+            self._client.ping()
+            return True
+        except RedisError:
+            return False
+
     def get_queue_length(self, queue_name: str) -> int:
         """Get number of messages in a Redis queue.
 
@@ -141,37 +178,19 @@ class RedisBroker(Broker):
             logger.error("Failed to get queue length for %s: %s", queue_name, e)
             raise
 
-    def ping(self) -> bool:
-        """Check if Redis is reachable.
+    def get_queue_information(self, queue_length: int, queue_name: str):
+        # Get task in queue (key in list redis)
+        # Keys in List Redis return as <class 'Bytes'>
+        # LRANGE: Returns the specified elements of the list stored at key.
+        list_tasks = self._client.lrange(queue_name, 0, queue_length)
+        # A dictionary to store task name and count number of task in queue
+        qtasks = defaultdict()
+        for task in list_tasks:
+            task_info = json.loads(task.decode("utf8"))
+            task_name = task_info["headers"]["task"]
+            if task_name in qtasks:
+                qtasks[task_name] += 1
+            else:
+                qtasks[task_name] = 1
 
-        Returns:
-            True if Redis responds to ping, False otherwise
-        """
-        if not self._client:
-            return False
-        try:
-            self._client.ping()
-            return True
-        except RedisError:
-            return False
-
-    @property
-    def connection_info(self) -> Dict[str, Any]:
-        """Get Redis connection information.
-
-        Returns:
-            Dictionary with connection details
-        """
-        if self._use_sentinel:
-            return {
-                "sentinel_hosts": self._sentinel_hosts,
-                "sentinel_master_name": self._sentinel_master_name,
-                "vdb": self._db,
-                "type": "redis-sentinel",
-            }
-        return {
-            "host": self._host,
-            "port": self._port,
-            "vdb": self._db,
-            "type": "redis",
-        }
+        return qtasks
