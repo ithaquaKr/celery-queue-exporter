@@ -47,6 +47,33 @@ uv pip install celery-queue-exporter
     uv pip install -e ".[dev]"
     ```
 
+## Troubleshoot
+
+### Bug
+
+```python
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/app/exporter/__main__.py", line 128, in <module>
+    main()
+  File "/app/exporter/__main__.py", line 124, in main
+    run_exporter(settings)
+  File "/app/exporter/__main__.py", line 119, in run_exporter
+    ).serve_metrics(settings.host, settings.port)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/exporter/exporter.py", line 112, in serve_metrics
+    self._http_server = HTTPServer((host, port), MetricsHandler)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/socketserver.py", line 457, in __init__
+    self.server_bind()
+  File "/usr/local/lib/python3.12/http/server.py", line 136, in server_bind
+    socketserver.TCPServer.server_bind(self)
+  File "/usr/local/lib/python3.12/socketserver.py", line 478, in server_bind
+    self.socket.bind(self.server_address)
+socket.gaierror: [Errno -2] Name does not resolve
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

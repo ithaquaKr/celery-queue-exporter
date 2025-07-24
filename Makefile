@@ -26,11 +26,11 @@ VENV_PATH := .venv
 DOCKER_COMPOSE := docker compose -f docker/docker-compose.yml
 
 # Docker multi-platform settings
-DOCKER_REGISTRY ?=
+DOCKER_REGISTRY ?= ithadev
 DOCKER_TAG ?= latest
 DOCKER_PLATFORMS := linux/amd64,linux/arm64
 DOCKER_BUILDER := $(PROJECT_NAME)-builder
-DOCKERFILE_PATH := docker/Dockerfile
+DOCKERFILE_PATH := ./Dockerfile
 
 # Detect current platform for local builds
 CURRENT_PLATFORM := $(shell docker version --format '{{.Server.Os}}/{{.Server.Arch}}')
@@ -71,6 +71,11 @@ format: ## Format code
 	@echo "$(BLUE)Formatting code...$(NC)"
 	$(VENV_BIN)/ruff format .
 	@echo "$(GREEN)Formatting complete!$(NC)"
+
+run: ## Run the exporter locally
+	@echo "$(BLUE)Running the exporter...$(NC)"
+	$(VENV_BIN)/python -m exporter
+
 
 ##@ Build
 docker-build: ## Build Docker image for current platform only (fast)

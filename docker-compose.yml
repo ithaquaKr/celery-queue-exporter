@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  redis:
+    image: "redis:7-alpine"
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: ./examples
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  worker_celery:
+    build:
+      context: ./examples
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    command: celery -A app.celery worker -n worker_celery@%h --loglevel=info -Q celery
+
+  worker_mail:
+    build:
+      context: ./examples
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    command: celery -A app.celery worker -n worker_mail@%h --loglevel=info -Q mail
+
+  exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9726:9726"
+    depends_on:
+      - redis
+      - api
+    environment:
+      - CQ_EXPORTER_BROKER_TYPE=redis
+      - CQ_EXPORTER_BROKER_HOST=redis
+      - CQ_EXPORTER_BROKER_PORT=6379
+      - CQ_EXPORTER_MONITOR_QUEUES=0:celery,mail
+      - CQ_EXPORTER_LOG_LEVEL=INFO
